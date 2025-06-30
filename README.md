@@ -1,8 +1,8 @@
 # Clinical-Notes-XAI: An Explainable AI Pipeline for Clinical Text Classification
 This repository contains the source code for an end-to-end prototype I developed to classify clinical notes using state-of-the-art NLP. More importantly, this project was a passion project of mine to explore and demonstrate how to make these complex AI models transparent and interpretable for clinical and research applications.
 
-*Figure 1: Interactive Dashboard ScreenShot*
-![AI Metadata and Chart Output](https://github.com/sephcodes66/Clinical-Notes-XAI-/blob/main/ss/interactive_dashboard.png)
+*Interactive Dashboard ScreenShot*
+![AI Metadata and Chart Output](https://github.com/sephcodes66/Clinical-Notes-XAI-/blob/main/ss/interactive_dashboard1.png)
 
 ## Project Goal
 
