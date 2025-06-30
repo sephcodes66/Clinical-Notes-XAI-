@@ -1,0 +1,19 @@
+#Core Data Science & Machine Learning
+pandas
+numpy
+scikit-learn
+joblib
+
+#Deep Learning Framework & Transformers
+torch
+transformers
+huggingface-hub
+
+#Explainable AI (XAI)
+shap
+
+#Visualization & Dashboard
+plotly
+dash
+dash-bootstrap-components
+matplotlib
