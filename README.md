@@ -12,7 +12,7 @@ The final deliverable is an interactive Dash dashboard designed for clinical res
 
 The system is architected as a modular, end-to-end pipeline, ensuring reproducibility and maintainability. Each component is a discrete Python script, designed to be executed in sequence or orchestrated via the `main.py` script.
 
-![Interactive Dashboard](https://github.com/sephcodes66/Clinical-Notes-XAI-/blob/main/ss/interactive_dashboard1.png)
+![Interactive Dashboard](https://github.com/sephcodes66/Clinical-Notes-XAI-/blob/main/ss/interactive_dashboard2.png)
 
 ### 2.1. Data Processing & Modeling Workflow
 
