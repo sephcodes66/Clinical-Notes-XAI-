@@ -116,19 +116,4 @@ This project is just a starting point. Here are a few things I'm thinking about 
 ## Licenses
 This project is licensed under the MIT License.
 
-The following libraries are used in this project, and their licenses are listed below:
-
-| Library | License | Link |
-| --- | --- | --- |
-| pandas | BSD 3-Clause | https://github.com/pandas-dev/pandas/blob/main/LICENSE |
-| numpy | BSD 3-Clause | https://github.com/numpy/numpy/blob/main/LICENSE.txt |
-| scikit-learn | BSD 3-Clause | https://github.com/scikit-learn/scikit-learn/blob/main/COPYING |
-| joblib | BSD 3-Clause | https://github.com/joblib/joblib/blob/main/LICENSE.txt |
-| torch | BSD | https://github.com/pytorch/pytorch/blob/main/LICENSE |
-| transformers | Apache 2.0 | https://github.com/huggingface/transformers/blob/main/LICENSE |
-| huggingface-hub | Apache 2.0 | https://github.com/huggingface/huggingface_hub/blob/main/LICENSE |
-| shap | MIT | https://github.com/slundberg/shap/blob/master/LICENSE |
-| plotly | MIT | https://github.com/plotly/plotly.py/blob/master/LICENSE.txt |
-| dash | MIT | https://github.com/plotly/dash/blob/dev/LICENSE |
-| dash-bootstrap-components | Apache 2.0 | https://github.com/facultyai/dash-bootstrap-components/blob/main/LICENSE |
-| matplotlib | PSF-based | https://github.com/matplotlib/matplotlib/blob/main/LICENSE/LICENSE |
+This project uses several open-source libraries, including: pandas, numpy, scikit-learn, and joblib (BSD 3-Clause); torch (BSD); transformers, huggingface-hub, and dash-bootstrap-components (Apache 2.0); shap, plotly, and dash (MIT); and matplotlib (PSF-based). You can find more information about these licenses at the links in the original `README.md` file.
