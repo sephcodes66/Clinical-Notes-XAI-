@@ -113,7 +113,4 @@ This project is just a starting point. Here are a few things I'm thinking about 
 
 ---
 
-## Licenses
-This project is licensed under the MIT License.
-
-This project uses several open-source libraries, including: pandas, numpy, scikit-learn, and joblib (BSD 3-Clause); torch (BSD); transformers, huggingface-hub, and dash-bootstrap-components (Apache 2.0); shap, plotly, and dash (MIT); and matplotlib (PSF-based). You can find more information about these licenses at the links in the original `README.md` file.
+This project uses several open-source libraries, including: pandas, numpy, scikit-learn, and joblib (BSD 3-Clause); torch (BSD); transformers, huggingface-hub, and dash-bootstrap-components (Apache 2.0); shap, plotly, and dash (MIT); and matplotlib (PSF-based).
