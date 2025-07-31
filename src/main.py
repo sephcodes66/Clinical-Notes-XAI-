@@ -1,19 +1,17 @@
-# FileName: main.py
-# Description: This script automates the project setup and execution. It creates a
-#              virtual environment, installs dependencies from requirements.txt, and
-#              runs the data processing, feature extraction, and model training
-#              scripts in the correct sequence.
+# main.py
+# This script is a simple way to run the whole project. It sets up the
+# virtual environment, installs the dependencies, and then runs all the
+# data processing and model training scripts.
 
 import os
 import sys
 import subprocess
 import venv
 
-# --- Project Configuration ---
+# --- Config ---
 VENV_DIR = "venv"
 REQUIREMENTS_FILE = "requirements.txt"
-# Defines the sequence of scripts to execute for the main pipeline.
-PYTHON_SCRIPTS = [
+PIPELINE_SCRIPTS = [
     "src/data_preparation.py",
     "src/feature_extraction.py",
     "src/train_classifier.py"
@@ -21,101 +19,98 @@ PYTHON_SCRIPTS = [
 APP_SCRIPT = "src/app.py"
 
 
-def run_command(command, venv_python_path=None):
-    """Runs a shell command and prints its output in real-time."""
-    print(f"\n--- Running command: {' '.join(command)} ---")
+def run_command(command, venv_python=None):
+    """Runs a command and prints output in real-time."""
+    print(f"\n--- Running: {' '.join(command)} ---")
     try:
-        # If a python executable path is provided, use it to run python commands.
-        # This ensures commands are executed within the project's virtual environment.
-        if venv_python_path and command[0] == "python":
-            command[0] = venv_python_path
+        # If we have a venv, make sure we use it
+        if venv_python and command[0] == "python":
+            command[0] = venv_python
             
         process = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
-            bufsize=1,
-            universal_newlines=True,
         )
         for line in process.stdout:
             print(line, end="")
         process.wait()
         if process.returncode != 0:
-            print(f"--- !!! Command failed with error code: {process.returncode} !!! ---")
+            print(f"--- Command failed! ---")
             return False
     except Exception as e:
-        print(f"--- !!! An exception occurred: {e} !!! ---")
+        print(f"--- An exception occurred: {e} ---")
         return False
-    print(f"--- Command finished successfully ---")
+    print(f"--- Done ---")
     return True
 
 
 def get_venv_paths():
-    """Returns the platform-specific paths for the virtual environment's executables."""
-    # Handles differences in directory structure between Windows and Unix-like systems.
+    """Gets the venv paths for the current OS."""
     if sys.platform == "win32":
+        # Windows paths
         venv_python = os.path.join(VENV_DIR, "Scripts", "python.exe")
         venv_pip = os.path.join(VENV_DIR, "Scripts", "pip.exe")
     else:
+        # Unix-like paths
         venv_python = os.path.join(VENV_DIR, "bin", "python")
         venv_pip = os.path.join(VENV_DIR, "bin", "pip")
     return venv_python, venv_pip
 
 
-def create_virtual_env():
-    """Creates a virtual environment in the specified directory if it doesn't exist."""
+def setup_venv():
+    """Creates a venv if it doesn't exist."""
     if not os.path.exists(VENV_DIR):
-        print(f"Virtual environment '{VENV_DIR}' not found. Creating...")
+        print(f"Creating virtual environment at '{VENV_DIR}'...")
         try:
             venv.create(VENV_DIR, with_pip=True)
-            print("Virtual environment created successfully.")
+            print("Done.")
         except Exception as e:
-            print(f"Could not create virtual environment: {e}")
+            print(f"Couldn't create venv: {e}")
             return False
     else:
-        print(f"Virtual environment '{VENV_DIR}' already exists.")
+        print(f"Virtual environment already exists.")
     return True
 
 
-def install_requirements(venv_pip_path):
-    """Installs Python packages from the requirements.txt file."""
+def install_requirements(venv_pip):
+    """Installs packages from requirements.txt."""
     if not os.path.exists(REQUIREMENTS_FILE):
-        print(f"ERROR: '{REQUIREMENTS_FILE}' not found. Cannot install dependencies.")
+        print(f"Error: '{REQUIREMENTS_FILE}' not found.")
         return False
         
-    print("Installing dependencies from requirements.txt...")
-    return run_command([venv_pip_path, "install", "-r", REQUIREMENTS_FILE])
+    print("Installing dependencies...")
+    return run_command([venv_pip, "install", "-r", REQUIREMENTS_FILE])
 
 
-def run_pipeline():
-    """The main function to orchestrate the entire project setup and execution."""
-    print(">>> STARTING PROJECT AUTOMATION SCRIPT <<<")
+def main():
+    """Runs the whole show."""
+    print(">>> Kicking off the project setup <<<")
 
-    # Create the virtual environment.
-    if not create_virtual_env():
+    # Create venv
+    if not setup_venv():
         sys.exit(1)
 
-    venv_python_path, venv_pip_path = get_venv_paths()
+    venv_python, venv_pip = get_venv_paths()
 
-    # Install all required dependencies into the virtual environment.
-    if not install_requirements(venv_pip_path):
-        print("Halting due to failed dependency installation.")
+    # Install dependencies
+    if not install_requirements(venv_pip):
+        print("Failed to install dependencies. Stopping.")
         sys.exit(1)
 
-    # Execute the core project scripts in their designated order.
-    print("\n>>> EXECUTING PROJECT PHASES <<<")
-    for script_path in PYTHON_SCRIPTS:
-        if not run_command(["python", script_path], venv_python_path=venv_python_path):
-            print(f"Execution failed at script: {script_path}. Halting.")
+    # Run the pipeline
+    print("\n>>> Running the pipeline scripts <<<")
+    for script in PIPELINE_SCRIPTS:
+        if not run_command(["python", script], venv_python=venv_python):
+            print(f"Script failed: {script}. Stopping.")
             sys.exit(1)
             
-    # Provide final instructions to the user for launching the web application.
-    print("\n>>> AUTOMATION COMPLETE <<<")
-    print("All preliminary phases have been executed successfully.")
-    print("To start the interactive web dashboard, please run the following command in your terminal:")
-    print(f"\n  {venv_python_path} {APP_SCRIPT}\n")
+    # All done!
+    print("\n>>> All done! <<<")
+    print("To start the web app, run this command:")
+    print(f"\n  {venv_python} {APP_SCRIPT}\n")
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    main()

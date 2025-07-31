@@ -1,8 +1,6 @@
-# FileName: app.py
-# Description: This script builds and runs an interactive Dash web application. The dashboard
-#              allows users to input clinical text, receive a prediction from the trained
-#              classifier, and visualize the prediction's explanation through highlighted
-#              text and a SHAP waterfall plot.
+# app.py
+# This is the main Dash app. It's a simple web interface for playing
+# around with the model and seeing how the explanations work.
 
 import dash
 from dash import dcc, html, Input, Output, State
@@ -16,21 +14,21 @@ from transformers import AutoTokenizer, AutoModel
 import pandas as pd
 import re
 
-# Load all models and data once at startup to ensure the dashboard is responsive.
-print("Loading all models and data for the dashboard...")
+# Load up all the models and data when the app starts.
+print("Loading all the things for the dashboard...")
 device = torch.device("cpu")
 MODEL_NAME = "emilyalsentzer/Bio_ClinicalBERT"
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 bert_model = AutoModel.from_pretrained(MODEL_NAME).to(device)
-bert_model.eval() # Set model to evaluation mode.
+bert_model.eval()
 lr_model = joblib.load("models/logistic_regression_classifier.joblib")
 class_names = np.load('data/features/label_encoder_classes.npy', allow_pickle=True)
-# Load a sample text to pre-populate the text area.
+# I'm just grabbing a random sample to pre-populate the text box.
 sample_text = pd.read_csv("data/processed/processed_notes.csv").dropna().sample(1, random_state=42).iloc[0]['cleaned_text']
-print("Dashboard models loaded successfully.")
+print("Dashboard is ready to go.")
 
-def predict_proba_pipeline(text_array):
-    """Encapsulates the prediction pipeline from raw text to class probabilities."""
+def predict_pipeline(text_array):
+    """A wrapper for the whole prediction pipeline."""
     if isinstance(text_array, np.ndarray):
         text_array = text_array.tolist()
     inputs = tokenizer(text_array, return_tensors="pt", padding=True, truncation=True, max_length=512).to(device)
@@ -39,32 +37,33 @@ def predict_proba_pipeline(text_array):
     cls_embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
     return lr_model.predict_proba(cls_embeddings)
 
-# Configure the SHAP explainer for text, splitting by whitespace for tokenization.
+# I'm using a simple whitespace masker for the text.
 text_masker = shap.maskers.Text(r"\s+")
-explainer = shap.Explainer(predict_proba_pipeline, text_masker)
+explainer = shap.Explainer(predict_pipeline, text_masker)
 
 def shap_to_html(shap_explanation, class_index):
     """
-    Converts a SHAP explanation object into an HTML string with highlighted words.
+    Turns a SHAP explanation into a bunch of HTML spans with pretty colors.
     """
     words = shap_explanation.data
     shap_vals = shap_explanation[:, class_index].values
     
-    # Normalize SHAP values to be between -1 and 1 for consistent color scaling.
+    # Normalize the SHAP values so the colors look good.
     max_abs_val = np.abs(shap_vals).max()
-    if max_abs_val == 0: max_abs_val = 1 # Avoid division by zero on neutral inputs.
+    if max_abs_val == 0: max_abs_val = 1
     
     html_elements = []
     for word, val in zip(words, shap_vals):
         normalized_val = val / max_abs_val
-        # Assign red for positive contributions and blue for negative contributions.
+        # Red for good, blue for bad (or the other way around, depending
+        # on how you look at it).
         if normalized_val > 0:
             color = f"rgba(255, 0, 0, {abs(normalized_val):.3f})" # Red
         else:
             color = f"rgba(0, 0, 255, {abs(normalized_val):.3f})" # Blue
         
-        # Create an HTML span for each word with a tooltip showing its exact SHAP value.
-        tooltip_text = f"Contribution: {val:.4f}"
+        # I'm adding a tooltip so you can see the raw SHAP value.
+        tooltip_text = f"SHAP Value: {val:.4f}"
         span = html.Span(
             children=word + " ",
             style={'background-color': color, 'padding': '2px', 'margin': '1px', 'border-radius': '3px'},
@@ -74,37 +73,37 @@ def shap_to_html(shap_explanation, class_index):
         
     return html.Div(html_elements)
 
-# Initialize the Dash application with a Bootstrap theme.
+# Let's get this app started.
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
 
-# Define the layout and structure of the web application.
+# This is the layout of the app. I'm using Dash Bootstrap Components
+# because it makes things look nice without a lot of work.
 app.layout = dbc.Container([
-    dbc.Row(dbc.Col(html.H1("Explainable AI for Clinical Text Classification", className="text-center my-4"), width=12)),
+    dbc.Row(dbc.Col(html.H1("Clinical Note Explainer", className="text-center my-4"), width=12)),
     dbc.Row([
         dbc.Col([
-            html.H5("Enter a Clinical Note:"),
+            html.H5("Paste a clinical note here:"),
             dcc.Textarea(id='text-input', value=sample_text, style={'width': '100%', 'height': 200}),
-            html.Button('Analyze', id='submit-button', n_clicks=0, className="mt-2")
+            html.Button('Explain', id='submit-button', n_clicks=0, className="mt-2")
         ], width=12)
     ]),
     dbc.Row([
         dbc.Col(dcc.Loading(id="loading-output", children=[
-            html.H4("Model Prediction", className="mt-4"),
+            html.H4("Prediction:", className="mt-4"),
             html.Div(id='prediction-output', className="lead"),
             
-            # Container for the highlighted text explanation.
-            html.H4("Highlighted Text Explanation", className="mt-4"),
-            html.P("Hover over words to see their contribution value. Red words increase the prediction probability, blue words decrease it."),
+            html.H4("What the model is thinking:", className="mt-4"),
+            html.P("Hover over the words to see how much they contributed to the prediction. Red words pushed the prediction up, blue words pushed it down."),
             html.Div(id='highlighted-text-output', style={'border': '1px solid #ddd', 'padding': '10px', 'line-height': '2.0'}),
             
-            html.H4("SHAP Waterfall Plot", className="mt-4"),
+            html.H4("The most important words:", className="mt-4"),
             dcc.Graph(id='shap-plot')
         ]), width=12)
     ]),
 ], fluid=True)
 
-# Define the server-side callback to link UI components to the prediction logic.
+# This is the main callback that does all the work.
 @app.callback(
     Output('prediction-output', 'children'),
     Output('shap-plot', 'figure'),
@@ -114,49 +113,50 @@ app.layout = dbc.Container([
 )
 def update_output(n_clicks, text_input):
     if n_clicks == 0 or not text_input:
-        return "Enter text and click 'Analyze'.", go.Figure(), ""
+        return "Paste some text and click 'Explain'.", go.Figure(), ""
 
-    # Run the full prediction and explanation pipeline on the user's input.
-    prediction_probas = predict_proba_pipeline(np.array([text_input]))[0]
+    # Get the prediction and the SHAP values
+    prediction_probas = predict_pipeline(np.array([text_input]))[0]
     predicted_class_index = np.argmax(prediction_probas)
     predicted_class_name = class_names[predicted_class_index]
     predicted_probability = prediction_probas[predicted_class_index]
-    prediction_text = f"Predicted Specialty: {predicted_class_name} (Probability: {predicted_probability:.2%})"
+    prediction_text = f"{predicted_class_name} ({predicted_probability:.2%})"
 
     shap_values = explainer([text_input])
-    explanation_for_one_sample = shap_values[0]
+    explanation = shap_values[0]
 
     try:
-        # Generate the waterfall plot for the top contributing features.
-        shap_vals_for_class = explanation_for_one_sample[:, predicted_class_index].values
-        words = explanation_for_one_sample.data
+        # Create the waterfall plot
+        shap_vals_for_class = explanation[:, predicted_class_index].values
+        words = explanation.data
         non_zero_indices = np.where(shap_vals_for_class != 0)[0]
+        # I'm only showing the top 20 words to keep the plot clean.
         num_features = min(20, len(non_zero_indices))
         sorted_indices = np.argsort(np.abs(shap_vals_for_class[non_zero_indices]))[-num_features:]
         top_words = np.array(words)[non_zero_indices][sorted_indices]
         top_shap_values = shap_vals_for_class[non_zero_indices][sorted_indices]
 
         fig = go.Figure(go.Waterfall(
-            name="SHAP Explanation", orientation="h", y=top_words, x=top_shap_values,
+            name="SHAP", orientation="h", y=top_words, x=top_shap_values,
             connector={"line":{"color":"rgb(63, 63, 63)"}},
             increasing={"marker":{"color":"#d62728"}},
             decreasing={"marker":{"color":"#1f77b4"}}
         ))
         fig.update_layout(
-            title=f"How Features Contributed to the '{predicted_class_name}' Prediction",
-            yaxis_title="Features (Words)", margin=dict(l=150, r=20, t=60, b=20)
+            title=f"Top words for the '{predicted_class_name}' prediction",
+            yaxis_title="Words", margin=dict(l=150, r=20, t=60, b=20)
         )
         
-        # Generate the highlighted text HTML from the SHAP explanation.
-        highlighted_text_html = shap_to_html(explanation_for_one_sample, predicted_class_index)
+        # Create the highlighted text
+        highlighted_text_html = shap_to_html(explanation, predicted_class_index)
 
     except Exception as e:
         print(f"Error creating plot: {e}")
-        fig = go.Figure().update_layout(title="Could not generate plot.")
-        highlighted_text_html = "Error generating highlighted text."
+        fig = go.Figure().update_layout(title="Couldn't make the plot.")
+        highlighted_text_html = "Couldn't create the highlighted text."
         
     return prediction_text, fig, highlighted_text_html
 
-# Entry point for running the web application server.
+# Let's go!
 if __name__ == '__main__':
     app.run(debug=True)

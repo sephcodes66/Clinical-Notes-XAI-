@@ -1,83 +1,74 @@
-# FileName: data_preparation.py
-# Description: This script loads the raw mtsamples dataset, cleans the clinical text data,
-#              and saves a processed version ready for feature extraction and modeling.
+# data_preparation.py
+# This script takes the raw mtsamples data, cleans up the clinical notes,
+# and saves a nice, clean version for the next steps.
 
 import pandas as pd
 import re
 import os
 
-def clean_clinical_text(text: str) -> str:
-    """
-    Applies a standard NLP preprocessing pipeline to clinical text.
-    """
-    # Ensure input is a string to prevent errors with missing data (e.g., NaN).
+def clean_text(text):
+    """A simple text cleaning function for the clinical notes."""
+    # Make sure we're working with a string
     if not isinstance(text, str):
         return ""
     
     text = text.lower()
     
-    # Standardize text by removing special characters and normalizing whitespace.
+    # Get rid of special characters and extra whitespace
     text = re.sub(r'[^a-z0-9\s]', '', text)
     text = re.sub(r'\s+', ' ', text).strip()
     return text
 
-def run_data_preparation(
-    input_filepath: str, 
-    output_filepath: str,
-    text_column: str,
-    label_column: str
-) -> None:
-    """
-    Orchestrates the data preparation pipeline: loading, cleaning, and saving the data.
-    """
-    print("Starting Phase 1: Data Preparation...")
+def prepare_data(input_file, output_file, text_col, label_col):
+    """Loads, cleans, and saves the data."""
+    print("--- Starting Data Prep ---")
     
     try:
-        df = pd.read_csv(input_filepath)
-        print(f"Successfully loaded {len(df)} records from '{input_filepath}'.")
+        notes_df = pd.read_csv(input_file)
+        print(f"Loaded {len(notes_df)} notes from '{input_file}'.")
     except FileNotFoundError:
-        print(f"Error: The file was not found at {input_filepath}")
-        print("Please ensure the raw data file is correctly placed.")
+        print(f"Error: Can't find the data at {input_file}")
+        print("Make sure you've downloaded the mtsamples.csv file.")
         return
 
-    # Remove rows with missing text or labels, as they cannot be used for training.
-    df.dropna(subset=[text_column, label_column], inplace=True)
-    print(f"Working with {len(df)} complete records after removing missing values.")
+    # Drop any rows that are missing text or a label
+    notes_df.dropna(subset=[text_col, label_col], inplace=True)
+    print(f"Down to {len(notes_df)} notes after dropping NaNs.")
 
-    # Select and rename core columns for consistent naming in subsequent scripts.
-    df_processed = df[[text_column, label_column]].copy()
-    df_processed.rename(columns={
-        text_column: 'text',
-        label_column: 'label'
+    # Grab the columns we need and give them simpler names
+    clean_notes_df = notes_df[[text_col, label_col]].copy()
+    clean_notes_df.rename(columns={
+        text_col: 'text',
+        label_col: 'label'
     }, inplace=True)
 
-    print(f"Applying NLP cleaning pipeline to the '{text_column}' column...")
-    df_processed['cleaned_text'] = df_processed['text'].apply(clean_clinical_text)
+    print(f"Cleaning up the '{text_col}' column...")
+    clean_notes_df['cleaned_text'] = clean_notes_df['text'].apply(clean_text)
     
-    # Retain only the final columns needed for the modeling phase.
-    final_df = df_processed[['cleaned_text', 'label']]
+    # Just keep the columns we need for modeling
+    final_df = clean_notes_df[['cleaned_text', 'label']]
     
-    # Create the output directory if it doesn't exist to prevent save errors.
-    os.makedirs(os.path.dirname(output_filepath), exist_ok=True)
-    final_df.to_csv(output_filepath, index=False)
+    # Make sure the output folder exists
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    final_df.to_csv(output_file, index=False)
     
-    print("Phase 1 complete.")
-    print(f"Cleaned data saved to: {output_filepath}")
-    print("\nPreview of processed data:")
+    print("--- Data Prep Complete ---")
+    print(f"Cleaned data saved to: {output_file}")
+    print("\nHere's a peek at the cleaned data:")
     print(final_df.head())
 
 if __name__ == "__main__":
-    # Define file paths for raw input and processed output.
+    # File paths
     RAW_DATA_PATH = "data/raw/mtsamples.csv"
     PROCESSED_DATA_PATH = "data/processed/processed_notes.csv"
     
-    # Define the specific column names from the source mtsamples.csv dataset.
-    TEXT_COLUMN_NAME = "transcription"
-    LABEL_COLUMN_NAME = "medical_specialty"
+    # The columns we care about in the raw CSV
+    TEXT_COLUMN = "transcription"
+    LABEL_COLUMN = "medical_specialty"
     
-    run_data_preparation(
-        input_filepath=RAW_DATA_PATH,
-        output_filepath=PROCESSED_DATA_PATH,
-        text_column=TEXT_COLUMN_NAME,
-        label_column=LABEL_COLUMN_NAME
+    prepare_data(
+        input_file=RAW_DATA_PATH,
+        output_file=PROCESSED_DATA_PATH,
+        text_col=TEXT_COLUMN,
+        label_col=LABEL_COLUMN
     )
